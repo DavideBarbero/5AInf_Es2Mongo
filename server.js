@@ -173,14 +173,19 @@ let server = http.createServer(function (req, res) {
       break;
 
     case "/q4":
-      //Da correggere
-      op = [{ $group: { residenza: {}, mediaAnni: { $avg: "$anni" } } }];
+      op = [
+        {
+          $group: {
+            _id: { residenza: "$residenza" },
+            mediaAnni: { $avg: "$anni" },
+          },
+        },
+      ];
       aggregate(res, "utenti", op);
       break;
 
     case "/q5":
       find(res, "transazioni", { mittente: 4 }, { data: 0 });
-      //find2();
       break;
 
     case "/q6":
@@ -188,20 +193,32 @@ let server = http.createServer(function (req, res) {
       break;
 
     case "/q7":
+      opt = [
+        { $match: { $or: [{ mittente: 3 }, { destinatario: 3 }] } },
+        {
+          $group: {
+            _id: {},
+            sumDenaro: { $sum: "$somma" },
+          },
+        },
+      ];
+      aggregate(res, "transazioni", opt);
       break;
 
     case "/q8":
       opt = [
-        { $match: { nome: /o$/ } },
-        { $project: { _id: 0 } },
-        { $sort: { nome: 1 } },
-        { $limit: 2 },
-        { $group: { _id: {}, contPersone: { $sum: 1 } } },
+        {
+          $group: {
+            _id: { destinatario: "$destinatario" },
+            sumDenaro: { $sum: "$somma" },
+          },
+        },
       ];
-      aggregate(res, "persone", opt);
+      aggregate(res, "transazioni", opt);
       break;
 
     case "/q9":
+      find(res, "transazioni", { data: { $gt: new Date("2021-01-01") } }, {});
       break;
 
     default:
