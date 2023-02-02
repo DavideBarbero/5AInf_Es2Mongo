@@ -2,7 +2,7 @@
 let mongo = require("mongodb");
 //Prelevo la parte del modulo per la gestione del client mongo
 let mongoClient = mongo.MongoClient;
-let urlServerMongoDb = "mongodb://localhost:27017/";
+let urlServerMongoDb = "mongodb://127.0.0.1:27017/";
 
 let http = require("http");
 let url = require("url");
@@ -147,6 +147,61 @@ let server = http.createServer(function (req, res) {
         ],
         {}
       );
+      break;
+
+    case "/q1":
+      find(res, "utenti", { residenza: "Fossano" }, {});
+      break;
+
+    case "/q2":
+      find(
+        res,
+        "utenti",
+        { $or: [{ nome: /^L/ }, { nome: /^C/ }], anni: { $gt: 45 } },
+        {}
+      );
+      break;
+
+    case "/q3":
+      op = [
+        { $match: { cognome: /o$/ } },
+        { $project: { _id: 0, nome: 1, cognome: 1 } },
+        { $sort: { nome: 1 } },
+        { $limit: 2 },
+      ];
+      aggregate(res, "utenti", op);
+      break;
+
+    case "/q4":
+      //Da correggere
+      op = [{ $group: { residenza: {}, mediaAnni: { $avg: "$anni" } } }];
+      aggregate(res, "utenti", op);
+      break;
+
+    case "/q5":
+      find(res, "transazioni", { mittente: 4 }, { data: 0 });
+      //find2();
+      break;
+
+    case "/q6":
+      cont(res, "transazioni", { somma: { $gt: 20 } });
+      break;
+
+    case "/q7":
+      break;
+
+    case "/q8":
+      opt = [
+        { $match: { nome: /o$/ } },
+        { $project: { _id: 0 } },
+        { $sort: { nome: 1 } },
+        { $limit: 2 },
+        { $group: { _id: {}, contPersone: { $sum: 1 } } },
+      ];
+      aggregate(res, "persone", opt);
+      break;
+
+    case "/q9":
       break;
 
     default:
