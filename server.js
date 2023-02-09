@@ -193,16 +193,35 @@ let server = http.createServer(function (req, res) {
       break;
 
     case "/q7":
-      opt = [
-        { $match: { $or: [{ mittente: 3 }, { destinatario: 3 }] } },
-        {
-          $group: {
-            _id: {},
-            sumDenaro: { $sum: "$somma" },
-          },
-        },
-      ];
-      aggregate(res, "transazioni", opt);
+      find2(
+        res,
+        "utenti",
+        { nome: "Mattia", cognome: "Manzo" },
+        {},
+        function (ris) {
+          let id = ris[0]._id;
+          let opt = [
+            { $match: { destinatario: id } },
+            { $group: { _id: "$destinatario", entrate: { $sum: "$somma" } } },
+          ];
+          aggregate2(res, "transazioni", opt, function (ris) {
+            let entrate = ris[0].entrate;
+            let opt2 = [
+              { $match: { mittente: id } },
+              { $group: { _id: "$mittente", uscite: { $sum: "$somma" } } },
+            ];
+            aggregate2(res, "transazioni", opt2, function (ris) {
+              let uscite = ris[0].uscite;
+              let bilancio = entrate - uscite;
+              json = {
+                cod: 1,
+                desc: "Il resoconto di Mattia Manzo è " + bilancio,
+              };
+              res.end(JSON.stringify(json));
+            });
+          });
+        }
+      );
       break;
 
     case "/q8":
@@ -418,6 +437,23 @@ function remove(res, col, where) {
     });
     promise.catch(function (err) {
       obj = { cod: -2, desc: "Errore nella cancellazione" };
+      res.end(JSON.stringify(obj));
+      conn.close();
+    });
+  });
+}
+
+function aggregate2(res, col, opzioni, callback) {
+  creaConnessione(database, res, function (conn, db) {
+    let promise = db.collection(col).aggregate(opzioni).toArray();
+    promise.then(function (ris) {
+      conn.close();
+      callback(ris);
+      //conn.close() prima della callback così chiudo la connessione prima di aprirne una nuova
+    });
+
+    promise.catch(function (error) {
+      obj = { cod: -2, desc: "Errore nella ricerca" };
       res.end(JSON.stringify(obj));
       conn.close();
     });
